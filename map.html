@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive Map with Timestamped Markers</title>
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h3>Add Timestamped Markers to the Map</h3>
+    <form id="locationForm">
+        <input type="text" id="locationInput" placeholder="Enter a location">
+        <button type="submit">Add Marker</button>
+    </form>
+    <button onclick="calculateRoute()">Calculate Route</button>
+    <div id="map"></div>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAgdk_HuT6eRGCG09O6JukF7WgvgRgEUow&callback=initMap" async defer></script>
+    <script>
+        let map;
+        let geocoder;
+        let directionsService;
+        let directionsRenderer;
+        let markers = [];
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: {lat: 38.5449, lng: -121.740517}, // davis coords
+                zoom: 12
+            });
+            geocoder = new google.maps.Geocoder();
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer();
+            directionsRenderer.setMap(map);
+
+            document.getElementById('locationForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                geocodeAndAddMarker();
+            });
+        }
+
+        function geocodeAndAddMarker() {
+            let address = document.getElementById('locationInput').value;
+            geocoder.geocode({'address': address}, function(results, status) {
+                if (status === 'OK') {
+                    let position = results[0].geometry.location;
+                    map.setCenter(position);
+                    let marker = new google.maps.Marker({
+                        map: map,
+                        position: position
+                    });
+                    markers.push(marker);
+
+                    // infowindow 
+                    let timestamp = new Date().toLocaleString(); //current date and time
+                    let infowindow = new google.maps.InfoWindow({
+                        content: timestamp
+                    });
+
+                    marker.addListener('click', function() {
+                        infowindow.open(map, marker);
+                    });
+
+                    // when marker is added, add the info
+                    infowindow.open(map, marker);
+                } else {
+                    alert('Geo-tracker was not successful for the following reason: ' + status);
+                }
+            });
+        }
+
+        function calculateRoute() {
+            if (markers.length >= 2) {
+                let waypoints = markers.slice(1, -1).map(marker => ({location: marker.getPosition(), stopover: true}));
+                let origin = markers[0].getPosition();
+                let destination = markers[markers.length - 1].getPosition();
+
+                directionsService.route({
+                    origin: origin,
+                    destination: destination,
+                    waypoints: waypoints,
+                    travelMode: 'DRIVING' // driving route
+                }, function(response, status) {
+                    if (status === 'OK') {
+                        directionsRenderer.setDirections(response);
+                    } else {
+                        window.alert('Directions request failed due to ' + status);
+                    }
+                });
+            } else {
+                window.alert('Please add at least two markers to show route');
+            }
+        }
+    </script>
+</body>
+</html>
