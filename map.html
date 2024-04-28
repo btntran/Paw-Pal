@@ -22,9 +22,9 @@
     <script>
         let map;
         let geocoder;
-        let directionsService;
-        let directionsRenderer;
-        let markers = [];
+  //      let directionsService;
+    //    let directionsRenderer;
+      //  let markers = [];
 
         function initMap() {
             // init map on davis 
@@ -34,9 +34,9 @@
             });
 
             geocoder = new google.maps.Geocoder();
-            directionsService = new google.maps.DirectionsService();
-            directionsRenderer = new google.maps.DirectionsRenderer();
-            directionsRenderer.setMap(map);
+    //        directionsService = new google.maps.DirectionsService();
+      //      directionsRenderer = new google.maps.DirectionsRenderer();
+        //    directionsRenderer.setMap(map);
 
             document.getElementById('locationForm').addEventListener('submit', function(event) {
                 event.preventDefault();
@@ -48,23 +48,37 @@
             let address = document.getElementById('locationInput').value;
             geocoder.geocode({'address': address}, function(results, status) {
                 if (status === 'OK') {
-                    map.setCenter(results[0].geometry.location);
+                    let position = results[0].geometry.location;
+             //       map.setCenter(results[0].geometry.location);
                     let marker = new google.maps.Marker({
                         map: map,
-                        position: results[0].geometry.location
+                        position: position
                     });
                     markers.push(marker.getPosition());
+
+                    let timestamp = new Date().toLocaleString();
+                    let infowindow = new google.maps.Infowindow({
+                        content: 'Marker placed at: ' + timestamp
+                    });
+                    infowindow.open(map, marker);
+                    
+                    marker.addListener('click', function() {
+                        infowindow.open(map, marker); 
+                    });
+
+                    
                 } else {
                     alert('Geocode was not successful for the following reason: ' + status);
                 }
             });
         }
+
         //route calc
         function calculateRoute() {
             if (markers.length >= 2) {
                 let waypoints = markers.slice(1, markers.length - 1).map(location => ({location: location, stopover: true}));
                 let origin = markers[0];
-                let destination = markers[markers.length - 1];
+                let destination = markers[markers.length - 1].getPosition();
 
                 directionsService.route({
                     origin: origin,
@@ -79,7 +93,7 @@
                     }
                 });
             } else {
-                window.alert('Add at least two markers to calculate route');
+                window.alert('Add at least two markers to see route');
             }
         }
     </script>
